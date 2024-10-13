@@ -3,9 +3,17 @@ services:
     build: .
     ports:
       - 3000:3000
+      - 5555:5555
     volumes:
       - .:/app
       - /app/node_modules
     environment:
       - NODE_ENV=development
-
+  db:
+    image: postgres:17
+    environment:
+      POSTGRES_DB: nextjs_prisma
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - 5432:5432
