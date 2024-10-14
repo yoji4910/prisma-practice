@@ -1,95 +1,108 @@
-import Image from "next/image";
-import styles from "./page.module.css";
+'use client'
+
+import { useState, useEffect } from 'react'
+import { Card, Input, Button, Table, Row, Col } from 'antd'
+import type { ColumnsType } from 'antd/es/table'
+
+interface DataType {
+  key: string
+  id: number
+  content: string
+  createdAt: string
+}
 
 export default function Home() {
-  return (
-    <div className={styles.page}>
-      <main className={styles.main}>
-        <Image
-          className={styles.logo}
-          src="https://nextjs.org/icons/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol>
-          <li>
-            Get started by editing <code>src/app/page.tsx</code>.
-          </li>
-          <li>Save and see your changes instantly.</li>
-        </ol>
+  const [content, setContent] = useState<string>('')
+  const [dataSource, setDataSource] = useState<DataType[]>([])
 
-        <div className={styles.ctas}>
-          <a
-            className={styles.primary}
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className={styles.logo}
-              src="https://nextjs.org/icons/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-            className={styles.secondary}
-          >
-            Read our docs
-          </a>
-        </div>
-      </main>
-      <footer className={styles.footer}>
-        <a
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="https://nextjs.org/icons/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="https://nextjs.org/icons/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="https://nextjs.org/icons/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
+  useEffect(() => {
+    const fetchNotes = async () => {
+      const response = await fetch('/api/notes')
+      const notes = await response.json()
+      setDataSource(notes)
+    }
+    fetchNotes()
+  }, [])
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setContent(e.target.value)
+  }
+
+  const handleSaveClick = async () => {
+    const response = await fetch('/api/notes', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ content }),
+    })
+    const data = await response.json()
+    setDataSource(data)
+
+    setContent('')
+  }
+
+  const handleDeleteClick = async (id: number) => {
+    const response = await fetch(`/api/notes?id=${id}`, {
+      method: 'DELETE',
+    })
+    const data = await response.json()
+    setDataSource(data)
+  }
+
+  const columns: ColumnsType<DataType> = [
+    {
+      title: 'created_at',
+      dataIndex: 'createdAt',
+      width: '20%',
+      render: (date: Date) => new Date(date).toLocaleDateString(),
+      sorter: (a, b) => Date.parse(a.createdAt) - Date.parse(b.createdAt),
+    },
+    {
+      title: 'content',
+      dataIndex: 'content',
+      width: '75%',
+    },
+    {
+      width: '5%',
+      render: (record: DataType) => (
+        <Button danger onClick={() => handleDeleteClick(record.id)}>
+          Delete
+        </Button>
+      ),
+    },
+  ]
+
+  const centeredStyle: React.CSSProperties = {
+    display: 'flex',
+    justifyContent: 'center',
+    alignItems: 'center',
+    height: '100vh',
+  }
+
+  return (
+    <div style={centeredStyle}>
+      <Card title='Note' style={{ width: 800 }}>
+        <Row>
+          <Col span={16}>
+            <Input placeholder='content' value={content} onChange={handleInputChange} />
+          </Col>
+          <Col span={7} offset={1}>
+            <Button type='primary' onClick={handleSaveClick}>
+              Save
+            </Button>
+          </Col>
+        </Row>
+        <Table
+          dataSource={dataSource}
+          columns={columns}
+          rowKey={(record) => record.id}
+          pagination={{
+            pageSize: 5,
+          }}
+          style={{ marginTop: 20 }}
+        />
+      </Card>
     </div>
-  );
+  )
 }
